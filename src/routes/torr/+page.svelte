@@ -22,6 +22,14 @@
         uri= torrent.magnetURI;
       })
     })
+
+    if ('registerProtocolHandler' in navigator) {
+      navigator.registerProtocolHandler('magnet', window.location.origin + '#%s', 'Instant.io')
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+    }
   });
 
   const upload=(e)=>{
@@ -51,6 +59,8 @@
       const interval = setInterval(() => {
         progress = (torrent.progress * 100).toFixed(1);
         console.log('Progress: ' + progress + '%')
+        console.log(torrent);
+        console.log(torrent.downloadSpeed);
       }, 5000)
 
       torrent.on('done', () => {
@@ -94,8 +104,8 @@
 </div>
 
 <div class="m-4">
-  <div class="w-full bg-gray-200 rounded-full">
-    <div class="bg-blue-600 text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-l-full" style="width: {progress}%"> {progress}%</div>
+  <div class="w-full bg-gray-50 rounded-full">
+    <div class="bg-blue-600 text-xs font-medium text-gray-600 text-center p-0.5 leading-none rounded-l-full" style="width: {progress}%"> {progress}%</div>
   </div>
 </div>
 
