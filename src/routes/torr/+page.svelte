@@ -8,7 +8,7 @@
     client = new WebTorrent();
 
     if (!WebTorrent.WEBRTC_SUPPORT) {
-      console.error('This browser is unsupported. Please use a browser with WebRTC support.')
+      alert('This browser is unsupported. Please use a browser with WebRTC support.')
     }
     client.on('error', err => {
       console.error('ERROR: ' + err.message)
