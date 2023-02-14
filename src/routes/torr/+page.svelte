@@ -32,6 +32,21 @@
     }
   });
 
+  const printProcess = (torrentInfo, progressBarLength = 25) => {
+  const percent = torrentInfo.progress * 100 | 0;
+  const speed = torrentInfo.downloadSpeed / 1024 / 1024 | 0;
+  const downloadedSize = torrentInfo.downloaded / 1024 / 1024 | 0;
+  const fullSize = torrentInfo.length / 1024 / 1024 | 0;
+
+  const percentPerDot = 100 / progressBarLength | 0;
+  const doneCount = percent / percentPerDot | 0;
+  const done = '\\033[42m' + ' '.repeat(doneCount) + '\\033[0m';
+  const undone = ' '.repeat(progressBarLength - doneCount);
+
+  console.log(`\r[${done}${undone}] ${percent}% (${downloadedSize}/${fullSize} MB) speed: ${speed} MB/S`);
+};
+
+
   const upload=(e)=>{
     var file = e.target.files[0];
     client.seed(file, torrent => {
@@ -47,51 +62,55 @@
   }
 
   async function onTorrent (torrent) {
-      console.log('Got torrent metadata!')
+    console.log('Got torrent metadata!')
+    console.log(torrent);
+    console.log(
+      'Torrent info hash: ' + torrent.infoHash + ' ' +
+      '<a href="' + torrent.magnetURI + '" target="_blank">[Magnet URI]</a> ' +
+      '<a href="' + URL.createObjectURL(torrent.torrentFileBlob) + '" target="_blank" download="' + torrent.name + '.torrent">[Download .torrent]</a>'
+    )
+
+    // Print out progress every 5 seconds
+    const interval = setInterval(() => {
+      progress = (torrent.progress * 100).toFixed(1);
+      const speed = torrent.downloadSpeed / 1024 / 1024 | 0;
+      const downloadedSize = torrent.downloaded / 1024 / 1024 | 0;
+      const fullSize = torrent.length / 1024 / 1024 | 0;
+
+      console.log('Progress: ' + progress + '%')
       console.log(torrent);
-      console.log(
-        'Torrent info hash: ' + torrent.infoHash + ' ' +
-        '<a href="' + torrent.magnetURI + '" target="_blank">[Magnet URI]</a> ' +
-        '<a href="' + URL.createObjectURL(torrent.torrentFileBlob) + '" target="_blank" download="' + torrent.name + '.torrent">[Download .torrent]</a>'
-      )
+      console.log(speed, downloadedSize);
+    }, 500)
 
-      // Print out progress every 5 seconds
-      const interval = setInterval(() => {
-        progress = (torrent.progress * 100).toFixed(1);
-        console.log('Progress: ' + progress + '%')
-        console.log(torrent);
-        console.log(torrent.downloadSpeed);
-      }, 5000)
+    torrent.on('done', () => {
+      progress = 100;
+      console.log('Progress: '+progress+'%')
+      clearInterval(interval)
+    })
 
-      torrent.on('done', () => {
-        progress = 100;
-        console.log('Progress: '+progress+'%')
-        clearInterval(interval)
-      })
-
-      // Render all files into to the page
-      for (const file of torrent.files) {
-        try {
-          // console.log(file);
-          const blob = await file.blob()
-          // console.log(blob);
-          const url = window.URL.createObjectURL(blob);
-          var fileData={
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            downloadURL: url
-          }
-          links= [...links, fileData];
-          // console.log(links);
-          // console.log('(Blob URLs only work if the file is loaded from a server. "http//localhost" works. "file://" does not.)')
-          // console.log('File done.')
-          // console.log('<a href="' + URL.createObjectURL(blob) + '">Download full file: ' + file.name + '</a>')
-        } catch (err) {
-          if (err) console.log(err.message)
+    // Render all files into to the page
+    for (const file of torrent.files) {
+      try {
+        // console.log(file);
+        const blob = await file.blob()
+        // console.log(blob);
+        const url = window.URL.createObjectURL(blob);
+        var fileData={
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          downloadURL: url
         }
+        links= [...links, fileData];
+        // console.log(links);
+        // console.log('(Blob URLs only work if the file is loaded from a server. "http//localhost" works. "file://" does not.)')
+        // console.log('File done.')
+        // console.log('<a href="' + URL.createObjectURL(blob) + '">Download full file: ' + file.name + '</a>')
+      } catch (err) {
+        if (err) console.log(err.message)
       }
     }
+  }
 
     var dataEL;
     var links=[];
